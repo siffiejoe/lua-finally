@@ -53,11 +53,12 @@ end
 local function main1( r1, r2, r3, r4, r5, stack, calls, dbg )
   print( r1, r2, r3, r4, r5, stack, calls, dbg )
   local a, b, c
-  finally( function()
+  return finally( function()
     a = create_a( r1 )
     b = create_b( r2 )
     c = create_c( r3 )
     print( "ok" )
+    return 1, 2, 3
   end, function()
     if r5 then wastememory( 3 ) end
     if c then c:destroy() end
@@ -84,10 +85,6 @@ ___()
 print( xpcall( main1, tb, false, false, false, true, false ) )
 ___()
 print( xpcall( main1, tb, false, false, true, true, false ) )
-___()
-print( xpcall( main1, tb, false, true, false, true, false ) )
-___()
-print( xpcall( main1, tb, true, false, false, true, false ) )
 ___()
 print( xpcall( main1, tb, false, false, false, false, true, 20, 4, true ) )
 ___()

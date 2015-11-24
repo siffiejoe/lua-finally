@@ -169,7 +169,6 @@ static int lfinally( lua_State* L ) {
     lua_xmove( L2, L, 1 );
     lua_error( L );
   }
-  lua_settop( L, 3 ); /* reserve a stack slot for later */
   /* run main function */
   lua_pushvalue( L, 1 );
   status = lua_pcall( L, 0, LUA_MULTRET, 0 );
@@ -179,13 +178,13 @@ static int lfinally( lua_State* L ) {
   if( debug ) /* reset memory allocation function */
     lua_setallocf( L, as.alloc, as.ud );
   if( status2 != 0 && status2 != LUA_YIELD ) {
-    lua_remove( L, 3 ); /* make room */
+    lua_settop( L, 0 ); /* make room */
     lua_xmove( L2, L, 1 ); /* error message from other thread */
     lua_error( L );
   }
   if( status != 0 )
     lua_error( L ); /* re-raise error from main function */
-  return lua_gettop( L )-3; /* return values from main function */
+  return lua_gettop( L )-2; /* return values from main function */
 }
 
 
