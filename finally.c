@@ -1,3 +1,43 @@
+/* Lua module providing a `finally` function for deterministic
+ * resource cleanup.
+ *
+ * The value returned when `require`ing this module is a function
+ *
+ *     local finally = require( "finally" )
+ *
+ * with the following behavior:
+ *
+ *     finally( f, f, ni, ni, b ) ==> ...
+ *
+ * `finally` calls the function given as the first argument and then
+ * calls the function given as the second argument. Even if the first
+ * function raises an error, the second function is called anyway. If
+ * the second function executes without error, the return values from
+ * the first function call are returned (or the error is re-raised).
+ * However, if the second function raises an error, that error is
+ * propagated and previous return values/errors are lost. To prevent
+ * that from happening, `finally` preallocates memory for the second
+ * function call. You can specify how much Lua stack slots for local
+ * variables (3rd argument) and call frames (4th argument) should be
+ * available. The 5th argument, when set to `true`, allows you to find
+ * suitable parameters during development by causing an out of memory
+ * error as soon as the second function call allocates any additional
+ * memory. The last three arguments are optional and default to 100
+ * stack slots, 10 call frames, and `nil` (meaning no forced memory
+ * errors).
+ *
+ * Example:
+ *
+ *     local f
+ *     local a, b, c = finally( function()
+ *       f = io.open( "file.txt", "w" )
+ *       -- do something with f that may raise an error
+ *       return 1, 2, 3
+ *     end, function()
+ *       if f then f:close() end
+ *     end )
+ */
+
 #include <stddef.h>
 #include <lua.h>
 #include <lauxlib.h>
@@ -105,7 +145,7 @@ static int lfinally( lua_State* L ) {
                  "invalid number of reserved stack slots" );
   mincalls = luaL_optinteger( L, 4, 10 );
   luaL_argcheck( L, mincalls > 0, 4,
-                 "invalid minimum number of C calls" );
+                 "invalid minimum number of call frames" );
   mincalls += 1; /* stack frame(s) used internally */
   debug = lua_toboolean( L, 5 );
   lua_settop( L, 2 );
