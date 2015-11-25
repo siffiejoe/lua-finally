@@ -50,8 +50,8 @@ local function wastememory( n )
 end
 
 
-local function main1( r1, r2, r3, r4, r5, stack, calls, dbg )
-  print( r1, r2, r3, r4, r5, stack, calls, dbg )
+local function main1( r1, r2, r3, r4, stack, calls, dbg )
+  print( r1, r2, r3, r4, stack, calls, dbg )
   local a, b, c
   return finally( function()
     a = create_a( r1 )
@@ -60,7 +60,7 @@ local function main1( r1, r2, r3, r4, r5, stack, calls, dbg )
     print( "ok" )
     return 1, 2, 3
   end, function()
-    if r5 then wastememory( 3 ) end
+    wastememory( 3 )
     if c then c:destroy() end
     if r4 then error( "error in finally cleanup function" ) end
     if b then b:clear() end
@@ -72,21 +72,21 @@ end
 local x = ("="):rep( 70 )
 local function ___() print( x ) end
 local tb = debug.traceback
-print( xpcall( main1, tb, false, false, false, false, true, 80, 4, true ) )
+print( xpcall( main1, tb, false, false, false, false, 80, 4, true ) )
 ___()
-print( xpcall( main1, tb, false, false, false, false, false ) )
+print( xpcall( main1, tb, false, false, false, false ) )
 ___()
-print( xpcall( main1, tb, false, false, true, false, false ) )
+print( xpcall( main1, tb, false, false, true, false ) )
 ___()
-print( xpcall( main1, tb, false, true, false, false, false ) )
+print( xpcall( main1, tb, false, true, false, false ) )
 ___()
-print( xpcall( main1, tb, true, false, false, false, false ) )
+print( xpcall( main1, tb, true, false, false, false ) )
 ___()
-print( xpcall( main1, tb, false, false, false, true, false ) )
+print( xpcall( main1, tb, false, false, false, true ) )
 ___()
-print( xpcall( main1, tb, false, false, true, true, false ) )
+print( xpcall( main1, tb, false, false, true, true ) )
 ___()
-print( xpcall( main1, tb, false, false, false, false, true, 20, 4, true ) )
+print( xpcall( main1, tb, false, false, false, false, 20, 4, true ) )
 ___()
-print( xpcall( main1, tb, false, false, false, false, true, 80, 3, true ) )
+print( xpcall( main1, tb, false, false, false, false, 80, 3, true ) )
 
