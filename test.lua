@@ -1,5 +1,5 @@
 #!/usr/bin/lua
-if arg[ 1 ] == "C" then
+if arg[ 1 ] ~= "L" then
   package.path = ""
 end
 
