@@ -114,22 +114,20 @@ LUA_KFUNCTION( preallocatek ) {
         lua_pushvalue( L, 1 );
         lua_pushvalue( L, 1 );
         lua_pushinteger( L, calls-1 );
-        lua_callk( L, 2, 1, 1, preallocatek );
+        lua_callk( L, 2, LUA_MULTRET, 1, preallocatek );
     case 1:
         if( lua_isfunction( L, 5 ) ) {
           if( lua_islightuserdata( L, 4 ) ) {
             alloc_state* as = lua_touserdata( L, 4 );
             lua_setallocf( L, alloc_fail, as );
           }
-          if( lua_isnil( L, 6 ) )
-            lua_pop( L, 1 );
           lua_call( L, lua_gettop( L )-5, 0 );
           return 0;
         }
       } else
         return lua_yield( L, 0 );
   }
-  return 1;
+  return lua_gettop( L ) > 2;
 }
 
 static int preallocate( lua_State* L ) {

@@ -65,8 +65,8 @@ local function main1( r1, r2, r3, r4, stack, calls, dbg )
     c = create_c( r3 )
     print( "ok" )
     return 1, 2, 3
-  end, function( e )
-    print( "error?", e )
+  end, function( ... )
+    print( "error?", ... )
     wastememory( 3 )
     if c then c:destroy() end
     if r4 then error( "error in finally cleanup function" ) end
