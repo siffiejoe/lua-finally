@@ -47,7 +47,7 @@ end
 
 
 local function wastememory( n )
-  local a, b, c, d, e, f, g, h, i, j, k, l, m, o, p, q, r, s, t
+  local a, b, c, d, e, f, g, h, i, j, k, l, m
   if n <= 0 then
     return 0
   else
@@ -67,7 +67,7 @@ local function main1( r1, r2, r3, r4, stack, calls, dbg )
     return 1, 2, 3
   end, function( ... )
     print( "error?", ... )
-    wastememory( 3 )
+    wastememory( 5 )
     if c then c:destroy() end
     if r4 then error( "error in finally cleanup function" ) end
     if b then b:clear() end
@@ -76,24 +76,35 @@ local function main1( r1, r2, r3, r4, stack, calls, dbg )
 end
 
 
+if _VERSION == "Lua 5.1" then
+  local xpcall, unpack, select = xpcall, unpack, select
+  function _G.xpcall( f, msgh, ... )
+    local args, n = { ... }, select( '#', ... )
+    return xpcall( function() return f( unpack( args, 1, n ) ) end, msgh )
+  end
+end
+
+
 local x = ("="):rep( 70 )
 local function ___() print( x ) end
 local tb = debug.traceback
-print( xpcall( main1, tb, false, false, false, false, 80, 4, true ) )
+print( xpcall( main1, tb, false, false, false, false, 80, 6, true ) )
 ___()
-print( xpcall( main1, tb, false, false, false, false ) )
+print( xpcall( main1, tb, false, false, false, false, nil, nil, true ) )
 ___()
-print( xpcall( main1, tb, false, false, true, false ) )
+print( xpcall( main1, tb, false, false, true, false, nil, nil, true ) )
 ___()
-print( xpcall( main1, tb, false, true, false, false ) )
+print( xpcall( main1, tb, false, true, false, false, nil, nil, true ) )
 ___()
-print( xpcall( main1, tb, true, false, false, false ) )
+print( xpcall( main1, tb, true, false, false, false, nil, nil, true ) )
 ___()
 print( xpcall( main1, tb, false, false, false, true ) )
 ___()
 print( xpcall( main1, tb, false, false, true, true ) )
 ___()
-print( xpcall( main1, tb, false, false, false, false, 20, 4, true ) )
+print( xpcall( main1, tb, false, false, false, false, 30, 6, true ) )
 ___()
 print( xpcall( main1, tb, false, false, false, false, 80, 3, true ) )
+___()
+print( xpcall( main1, tb, false, false, false, false, 1000001, 6, true ) )
 
