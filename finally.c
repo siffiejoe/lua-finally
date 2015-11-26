@@ -117,10 +117,9 @@ LUA_KFUNCTION( preallocatek ) {
         lua_callk( L, 2, LUA_MULTRET, 1, preallocatek );
     case 1:
         if( lua_isfunction( L, 5 ) ) {
-          if( lua_islightuserdata( L, 4 ) ) {
-            alloc_state* as = lua_touserdata( L, 4 );
+          alloc_state* as = lua_touserdata( L, 4 );
+          if( as )
             lua_setallocf( L, alloc_fail, as );
-          }
           lua_call( L, lua_gettop( L )-5, 0 );
           return 0;
         }
