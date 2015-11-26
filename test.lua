@@ -8,34 +8,40 @@ local finally = require( "finally" )
 
 local function create_a( raise )
   if raise then error( "error in create a" ) end
+  local name
   local o = {
-    close = function( self )
-      print( "-", "close  a", self )
+    close = function()
+      print( "-", "close  a", name )
     end
   }
-  print( "+", "create a", o )
+  name = tostring( o )
+  print( "+", "create a", name )
   return o
 end
 
 local function create_b( raise )
   if raise then error( "error in create b" ) end
+  local name
   local o = {
-    clear = function( self )
-      print( "-", "clear  b", self )
+    clear = function()
+      print( "-", "clear  b", name )
     end
   }
-  print( "+", "create b", o )
+  name = tostring( o )
+  print( "+", "create b", name )
   return o
 end
 
 local function create_c( raise )
   if raise then error( "error in create c" ) end
+  local name
   local o = {
-    destroy = function( self )
-      print( "-", "destroy c", self )
+    destroy = function()
+      print( "-", "destroy c", name )
     end
   }
-  print( "+", "create c", o )
+  name = tostring( o )
+  print( "+", "create c", name )
   return o
 end
 
@@ -59,7 +65,8 @@ local function main1( r1, r2, r3, r4, stack, calls, dbg )
     c = create_c( r3 )
     print( "ok" )
     return 1, 2, 3
-  end, function()
+  end, function( e )
+    print( "error?", e )
     wastememory( 3 )
     if c then c:destroy() end
     if r4 then error( "error in finally cleanup function" ) end

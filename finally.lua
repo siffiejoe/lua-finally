@@ -1,10 +1,11 @@
 local pcall, error = pcall, error
 
 local function _finally( after, ok, ... )
-  after()
   if ok then
+    after()
     return ...
   else
+    after( (...) )
     error( (...), 0 )
   end
 end

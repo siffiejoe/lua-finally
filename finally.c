@@ -28,13 +28,15 @@
  *
  * Example:
  *
- *     local f
- *     local a, b, c = finally( function()
- *       f = io.open( "file.txt", "w" )
- *       -- do something with f that may raise an error
- *       return 1, 2, 3
- *     end, function()
- *       if f then f:close() end
+ *     local f1, f2
+ *     local same = finally( function()
+ *       f1 = assert( io.open( "filename1.txt", "r" ) )
+ *       f2 = assert( io.open( "filename2.txt", "r" ) )
+ *       return f1:read( "*a" ) == f2:read( "*a" )
+ *     end, function( e )
+ *       if e then print( "there was an error!" ) end
+ *       if f2 then f2:close() end
+ *       if f1 then f1:close() end
  *     end )
  */
 
@@ -112,20 +114,22 @@ LUA_KFUNCTION( preallocatek ) {
         lua_pushvalue( L, 1 );
         lua_pushvalue( L, 1 );
         lua_pushinteger( L, calls-1 );
-        lua_callk( L, 2, 0, 1, preallocatek );
+        lua_callk( L, 2, 1, 1, preallocatek );
     case 1:
-        if( lua_islightuserdata( L, 4 ) ) {
-          alloc_state* as = lua_touserdata( L, 4 );
-          lua_setallocf( L, alloc_fail, as );
-        }
         if( lua_isfunction( L, 5 ) ) {
-          lua_settop( L, 5 );
-          lua_call( L, 0, 0 );
+          if( lua_islightuserdata( L, 4 ) ) {
+            alloc_state* as = lua_touserdata( L, 4 );
+            lua_setallocf( L, alloc_fail, as );
+          }
+          if( lua_isnil( L, 6 ) )
+            lua_pop( L, 1 );
+          lua_call( L, lua_gettop( L )-5, 0 );
+          return 0;
         }
       } else
         return lua_yield( L, 0 );
   }
-  return 0;
+  return 1;
 }
 
 static int preallocate( lua_State* L ) {
@@ -174,7 +178,11 @@ static int lfinally( lua_State* L ) {
   status = lua_pcall( L, 0, LUA_MULTRET, 0 );
   /* run cleanup function in the other thread */
   lua_settop( L2, 0 );
-  status2 = lua_resume( L2, L, 0 );
+  if( status != 0 ) {
+    lua_pushvalue( L, -1 ); /* duplicate error message */
+    lua_xmove( L, L2, 1 ); /* move to thread */
+  }
+  status2 = lua_resume( L2, L, !!status );
   if( debug ) /* reset memory allocation function */
     lua_setallocf( L, as.alloc, as.ud );
   if( status2 != 0 && status2 != LUA_YIELD ) {
