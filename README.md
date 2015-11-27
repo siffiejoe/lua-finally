@@ -61,6 +61,30 @@ And that's all.
   [2]:  http://lua-users.org/lists/lua-l/2015-04/msg00423.html
 
 
+##                          Quirks/Gotchas                          ##
+
+There are many ways to allocate memory in Lua code inadvertently, and
+thus to risk memory allocation errors or errors in `__gc` metamethods
+while running the cleanup function. What you should definitely avoid
+is table literals, writes to non-existing table fields, new strings
+(e.g. using string concatenation, by implicit coercions or `tostring`
+calls, or some C API functions, e.g. `luaL_error` -- string literals
+in Lua code are fine because they are allocated when the chunk is
+compiled), new Lua functions, coroutines, or userdata.
+
+This module works for Lua 5.1 (including LuaJIT) up to Lua 5.3, but
+the code for Lua 5.1 uses recursive Lua function calls instead of C
+function calls to preallocate call frames. There is a separate limit
+for C function calls that could cause an error later in the cleanup
+function, but you should easily be able to rule this out during
+testing. However, the number of stack slots or call frames needed by a
+JIT-compiled Lua function might differ from the uncompiled version of
+the same function, and JIT-compilation itself may happen at any time
+and cause memory allocations. Since the LuaJIT code is written in
+assembler, it is hard to figure out where exactly memory might be
+allocated. So when using LuaJIT you are basically on your own!
+
+
 ##                              Contact                             ##
 
 Philipp Janda, siffiejoe(a)gmx.net
@@ -71,7 +95,7 @@ Comments and feedback are always welcome.
 ##                              License                             ##
 
 **finally** is *copyrighted free software* distributed under the MIT
-license (the same license as Lua 5.2). The full license text follows:
+license (the same license as Lua 5.1). The full license text follows:
 
     finally (c) 2015 Philipp Janda
 
