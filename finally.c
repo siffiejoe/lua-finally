@@ -1,43 +1,5 @@
 /* Lua module providing a `finally` function for deterministic
  * resource cleanup.
- *
- * The value returned when `require`ing this module is a function
- *
- *     local finally = require( "finally" )
- *
- * with the following behavior:
- *
- *     finally( f, f, ni, ni, b ) ==> ...
- *
- * `finally` calls the function given as the first argument and then
- * calls the function given as the second argument. Even if the first
- * function raises an error, the second function is called anyway. If
- * the second function executes without error, the return values from
- * the first function call are returned (or the error is re-raised).
- * However, if the second function raises an error, that error is
- * propagated and previous return values/errors are lost. To prevent
- * that from happening, `finally` preallocates memory for the second
- * function call. You can specify how much Lua stack slots for local
- * variables (3rd argument) and call frames (4th argument) should be
- * available. The 5th argument, when set to `true`, allows you to find
- * suitable parameters during development by causing an out of memory
- * error as soon as the second function call allocates any additional
- * memory. The last three arguments are optional and default to 100
- * stack slots, 10 call frames, and `nil` (meaning no forced memory
- * errors).
- *
- * Example:
- *
- *     local f1, f2
- *     local same = finally( function()
- *       f1 = assert( io.open( "filename1.txt", "r" ) )
- *       f2 = assert( io.open( "filename2.txt", "r" ) )
- *       return f1:read( "*a" ) == f2:read( "*a" )
- *     end, function( e )
- *       if e then print( "there was an error!" ) end
- *       if f2 then f2:close() end
- *       if f1 then f1:close() end
- *     end )
  */
 
 #include <stddef.h>
@@ -73,7 +35,7 @@ typedef int lua_KContext;
   (lua_callk)( L, na, nr, 0, NULL )
 #endif
 
-#elif LUA_VERSION_NUM == 503 /* Lua older than 5.1 or new than 5.3 */
+#elif LUA_VERSION_NUM == 503 /* Lua 5.3 */
 
 #define LUA_KFUNCTION( _name ) \
   static int (_name)( lua_State* L, int status, lua_KContext ctx )
