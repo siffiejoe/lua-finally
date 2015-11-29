@@ -108,12 +108,6 @@ static int preallocate( lua_State* L ) {
 
 #else /* Lua 5.1 */
 
-static int lcheckstack( lua_State* L ) {
-  int slots = (int)luaL_checkinteger( L, 1 );
-  luaL_checkstack( L, slots, "preallocate" );
-  return 0;
-}
-
 static int lsetalloc( lua_State* L ) {
   alloc_state* as = lua_touserdata( L, 1 );
   if( as )
@@ -126,7 +120,7 @@ static int lyield( lua_State* L ) {
 }
 
 static char const preallocate_code[] =
-  "local checkstack, setalloc, yield = ...\n"
+  "local setalloc, yield = ...\n"
   "local function postprocess( as, cleanup, ... )\n"
   "  if cleanup then\n"
   "    if as then setalloc( as ) end\n"
@@ -136,7 +130,7 @@ static char const preallocate_code[] =
   "  end\n"
   "end\n"
   "return function( prealloc, calls, slots, as, f )\n"
-  "  if slots then checkstack( slots ) end\n"
+  "  local _1,_2,_3,_4,_5,_6,_7,_8,_9,_10\n"
   "  if calls > 0 then\n"
   "    return postprocess( as, f, prealloc( prealloc, calls-1 ) )\n"
   "  else\n"
@@ -153,10 +147,9 @@ static void push_lua_prealloc( lua_State* L ) {
                          sizeof( preallocate_code )-1,
                          "=(embedded)" ) )
       lua_error( L );
-    lua_pushcfunction( L, lcheckstack );
     lua_pushcfunction( L, lsetalloc );
     lua_pushcfunction( L, lyield );
-    lua_call( L, 3, 1 );
+    lua_call( L, 2, 1 );
     lua_pushlightuserdata( L, (void*)preallocate_code );
     lua_pushvalue( L, -2 );
     lua_rawset( L, LUA_REGISTRYINDEX );
@@ -191,15 +184,13 @@ static int lfinally( lua_State* L ) {
    * closure to preallocate stack and call frames. This only allocates
    * *Lua* call frames though, not C call frames, so you could hit a
    * limit there while executing the cleanup function later!
-   * Also, we have to allocate the extra stack slots here (because
-   * allocating them within a lua_CFunction would make them
-   * collectable as soon as the function returns). But we can't raise
-   * an error here (because it would be unprotected), so we do an
-   * additional fake `luaL_checkstack()` in the Lua closure somewhere
-   * to raise the potential error there!
-   */
+   * Also we can't preallocate a variable amount of stack slots so
+   * that they won't cause a panic on memory allocation failure *and*
+   * survive a garbage collection cycle during the main function.
+   * The above mentioned Lua closure allocates some extra locals, and
+   * if you need more you can increase the number of reserved calls
+   * (each extra call will give you about 15 slots). */
   push_lua_prealloc( L2 );
-  lua_checkstack( L2, (int)minstack );
 #endif
   lua_pushvalue( L2, -1 );
   lua_pushinteger( L2, mincalls );

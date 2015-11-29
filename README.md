@@ -7,8 +7,8 @@ resources in a reliable, yet undeterministic way. Some resources
 however need to be reclaimed as soon as possible, even if an error is
 raised while using such a resource. Other languages provide dedicated
 language features for this situation (`finally`, `using`, or
-scope-based destruction of objects -- `RAII`). On Lua (5.2+) you can
-use this **finally** module.
+scope-based destruction of objects -- `RAII`). On Lua you can use this
+**finally** module.
 
 
 ##                          Getting Started                         ##
@@ -74,15 +74,18 @@ compiled), new Lua functions, coroutines, or userdata.
 
 This module works for Lua 5.1 (including LuaJIT) up to Lua 5.3, but
 the code for Lua 5.1 uses recursive Lua function calls instead of C
-function calls to preallocate call frames. There is a separate limit
-for C function calls that could cause an error later in the cleanup
-function, but you should easily be able to rule this out during
-testing. However, the number of stack slots or call frames needed by a
-JIT-compiled Lua function might differ from the uncompiled version of
-the same function, and JIT-compilation itself may happen at any time
-and cause memory allocations. Since the LuaJIT code is written in
-assembler, it is hard to figure out where exactly memory might be
-allocated. So when using LuaJIT you are basically on your own!
+function calls to preallocate call frames and stack slots. There is a
+separate limit for C function calls that could cause an error later in
+the cleanup function, but you should easily be able to rule this out
+during testing. You also cannot explicitly set the number of stack
+slots to preallocate. For each call frame approximately 15 extra stack
+slots are available. However, the number of stack slots or call frames
+needed by a JIT-compiled Lua function might differ from the uncompiled
+version of the same function, and JIT-compilation itself may happen at
+any time and cause memory allocations. Since the LuaJIT code is
+written in assembler, it is hard to figure out where exactly memory
+might be allocated. So when using LuaJIT you are basically on your
+own!
 
 
 ##                              Contact                             ##
