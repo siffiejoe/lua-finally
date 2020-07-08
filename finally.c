@@ -10,10 +10,13 @@
 /* Lua version compatibility */
 #if LUA_VERSION_NUM == 501 /* Lua 5.1 / LuaJIT */
 
-#define lua_resume( L2, L, na ) \
-  ((void)(L), lua_resume( L2, na ))
+#define lua_resume( L2, L, na, nr ) \
+  ((void)(L), (void)(nr), lua_resume( L2, na ))
 
 #elif LUA_VERSION_NUM == 502 /* Lua 5.2 */
+
+#define lua_resume( L2, L, na, nr ) \
+  ((void)(nr), lua_resume( L2, L, na ))
 
 typedef int lua_KContext;
 
@@ -35,7 +38,15 @@ typedef int lua_KContext;
   (lua_callk)( L, na, nr, 0, NULL )
 #endif
 
-#elif LUA_VERSION_NUM == 503 /* Lua 5.3 */
+#elif LUA_VERSION_NUM == 503
+
+#define lua_resume( L2, L, na, nr ) \
+  ((void)(nr), lua_resume( L2, L, na ))
+
+#define LUA_KFUNCTION( _name ) \
+  static int (_name)( lua_State* L, int status, lua_KContext ctx )
+
+#elif LUA_VERSION_NUM == 504 /* Lua 5.3/5.4 */
 
 #define LUA_KFUNCTION( _name ) \
   static int (_name)( lua_State* L, int status, lua_KContext ctx )
@@ -70,7 +81,7 @@ static void* alloc_fail( void* ud, void* ptr, size_t osize,
 }
 
 
-#if LUA_VERSION_NUM > 501 /* Lua 5.2/5.3 */
+#if LUA_VERSION_NUM > 501 /* Lua 5.2+ */
 
 /* preallocate stack frames, preallocate stack slots, change Lua
  * allocator (if in debug mode), and call the cleanup function */
@@ -161,7 +172,7 @@ static void push_lua_prealloc( lua_State* L ) {
 
 static int lfinally( lua_State* L ) {
   lua_Integer minstack = 0, mincalls = 0;
-  int debug = 0, status = 0, status2 = 0;
+  int debug = 0, status = 0, status2 = 0, nret = 0;
   alloc_state as = { 0, 0 };
   lua_State* L2 = NULL;
   luaL_checktype( L, 1, LUA_TFUNCTION );
@@ -205,7 +216,7 @@ static int lfinally( lua_State* L ) {
   lua_replace( L, 2 ); /* L: [ function | thread ] */
   /* preallocate stack frames and stack slots for cleanup function,
    * and then yield ... */
-  status = lua_resume( L2, L, 5 );
+  status = lua_resume( L2, L, 5, &nret );
   if( status != LUA_YIELD ) { /* must be an error */
     lua_xmove( L2, L, 1 );
     lua_error( L );
@@ -220,7 +231,7 @@ static int lfinally( lua_State* L ) {
     lua_pushvalue( L, -1 ); /* duplicate error message */
     lua_xmove( L, L2, 1 ); /* move to thread */
   }
-  status2 = lua_resume( L2, L, !!status );
+  status2 = lua_resume( L2, L, !!status, &nret );
   if( debug ) /* reset memory allocation function */
     lua_setallocf( L, as.alloc, as.ud );
   if( status2 == LUA_YIELD ) {
